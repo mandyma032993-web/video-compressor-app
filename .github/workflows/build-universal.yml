@@ -1,0 +1,114 @@
+name: Build macOS Universal
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-arm64:
+    runs-on: macos-14  # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install pyinstaller
+
+      - run: pyinstaller server.spec --distpath dist
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Collect arm64 binaries
+        run: |
+          mkdir -p artifacts/arm64
+          cp dist/server artifacts/arm64/server
+          cp node_modules/ffmpeg-static/ffmpeg artifacts/arm64/ffmpeg
+          cp node_modules/ffprobe-static/bin/darwin/arm64/ffprobe artifacts/arm64/ffprobe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-arm64
+          path: artifacts/arm64/
+
+  build-x64:
+    runs-on: macos-13  # Intel x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install pyinstaller
+
+      - run: pyinstaller server.spec --distpath dist
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Collect x64 binaries
+        run: |
+          mkdir -p artifacts/x64
+          cp dist/server artifacts/x64/server
+          cp node_modules/ffmpeg-static/ffmpeg artifacts/x64/ffmpeg
+          cp node_modules/ffprobe-static/bin/darwin/x64/ffprobe artifacts/x64/ffprobe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries-x64
+          path: artifacts/x64/
+
+  build-universal:
+    needs: [build-arm64, build-x64]
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-arm64
+          path: artifacts/arm64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-x64
+          path: artifacts/x64
+
+      - name: Create universal binaries with lipo
+        run: |
+          mkdir -p dist
+          chmod +x artifacts/arm64/* artifacts/x64/*
+          lipo -create artifacts/arm64/server  artifacts/x64/server  -output dist/server
+          lipo -create artifacts/arm64/ffmpeg  artifacts/x64/ffmpeg  -output dist/ffmpeg
+          lipo -create artifacts/arm64/ffprobe artifacts/x64/ffprobe -output dist/ffprobe
+          chmod +x dist/server dist/ffmpeg dist/ffprobe
+          file dist/server dist/ffmpeg dist/ffprobe
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Place universal binaries
+        run: |
+          cp dist/ffmpeg node_modules/ffmpeg-static/ffmpeg
+          cp dist/ffprobe node_modules/ffprobe-static/bin/darwin/arm64/ffprobe
+
+      - name: Build universal Electron app
+        run: npx electron-builder --mac --universal
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Video-Compressor-universal
+          path: dist/*.dmg
