@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-arm64:
-    runs-on: macos-14  # Apple Silicon
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +36,7 @@ jobs:
           path: artifacts/arm64/
 
   build-x64:
-    runs-on: macos-14  # arm64 runner, cross-compile to x64
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -86,31 +86,49 @@ jobs:
           name: binaries-x64
           path: artifacts/x64
 
-      - name: Create universal binaries with lipo
-        run: |
-          mkdir -p dist
-          chmod +x artifacts/arm64/* artifacts/x64/*
-          file artifacts/arm64/* artifacts/x64/*
-          lipo -create artifacts/arm64/server artifacts/x64/server -output dist/server
-          lipo -create artifacts/arm64/ffmpeg artifacts/x64/ffmpeg -output dist/ffmpeg
-          # ffprobe-static has no real arm64 binary; x86_64 works via Rosetta on arm64
-          cp artifacts/x64/ffprobe dist/ffprobe
-          chmod +x dist/server dist/ffmpeg dist/ffprobe
-          file dist/server dist/ffmpeg dist/ffprobe
-
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - run: npm ci
 
-      - name: Place universal binaries
-        run: |
-          cp dist/ffmpeg node_modules/ffmpeg-static/ffmpeg
-          cp dist/ffprobe node_modules/ffprobe-static/bin/darwin/arm64/ffprobe
+      - run: npm install --save-dev @electron/universal
 
-      - name: Build universal Electron app
-        run: npx electron-builder --mac --universal
+      - name: Build arm64 app (unpacked)
+        run: |
+          mkdir -p dist
+          chmod +x artifacts/arm64/server artifacts/arm64/ffmpeg artifacts/x64/ffprobe
+          cp artifacts/arm64/server dist/server
+          cp artifacts/arm64/ffmpeg node_modules/ffmpeg-static/ffmpeg
+          cp artifacts/x64/ffprobe node_modules/ffprobe-static/bin/darwin/arm64/ffprobe
+          npx electron-builder --mac --arm64 --dir
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Build x64 app (unpacked)
+        run: |
+          chmod +x artifacts/x64/server artifacts/x64/ffmpeg
+          cp artifacts/x64/server dist/server
+          cp artifacts/x64/ffmpeg node_modules/ffmpeg-static/ffmpeg
+          npx electron-builder --mac --x64 --dir
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Merge into universal app
+        run: |
+          mkdir -p dist/mac-universal
+          node -e "
+          const { makeUniversalApp } = require('@electron/universal');
+          makeUniversalApp({
+            x64AppPath: 'dist/mac-x64/Video Compressor.app',
+            arm64AppPath: 'dist/mac-arm64/Video Compressor.app',
+            outAppPath: 'dist/mac-universal/Video Compressor.app',
+            x64ArchFiles: '**/bin/ffprobe',
+          }).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Package universal app into DMG
+        run: npx electron-builder --prepackaged "dist/mac-universal/Video Compressor.app" --mac dmg
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
