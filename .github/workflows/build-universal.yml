@@ -36,7 +36,7 @@ jobs:
           path: artifacts/arm64/
 
   build-x64:
-    runs-on: macos-13  # Intel x64
+    runs-on: macos-14  # arm64 runner, cross-compile to x64
     steps:
       - uses: actions/checkout@v4
 
@@ -46,13 +46,15 @@ jobs:
 
       - run: pip install pyinstaller
 
-      - run: pyinstaller server.spec --distpath dist
+      - run: pyinstaller server.spec --distpath dist --target-arch x86_64
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - run: npm ci
+        env:
+          npm_config_arch: x64
 
       - name: Collect x64 binaries
         run: |
