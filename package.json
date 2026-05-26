@@ -12,6 +12,7 @@
   "build": {
     "appId": "com.videocompressor.app",
     "productName": "Video Compressor",
+    "asar": true,
     "extraResources": [
       { "from": "dist/server", "to": "server" },
       { "from": "node_modules/ffmpeg-static/ffmpeg", "to": "bin/ffmpeg" },
