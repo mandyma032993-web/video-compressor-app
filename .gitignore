@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 *.spec
+!server.spec
 .jobs/
 __pycache__/
 *.pyc
