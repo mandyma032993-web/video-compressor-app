@@ -4,18 +4,27 @@ import socketserver
 import json
 import os
 import re
+import sys
 import threading
 import subprocess
 import uuid
 import shutil
+import tempfile
 import time
 from urllib.parse import urlparse, parse_qs, unquote
 
 PORT    = int(os.environ.get('PORT', 8080))
 FFMPEG  = os.environ.get('FFMPEG_PATH',  'ffmpeg')
 FFPROBE = os.environ.get('FFPROBE_PATH', 'ffprobe')
-DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-JOBS_DIR = os.path.join(DIRECTORY, '.jobs')
+
+if getattr(sys, 'frozen', False):
+    # Running as PyInstaller bundle — static files are in _MEIPASS
+    DIRECTORY = sys._MEIPASS
+    JOBS_DIR  = os.path.join(tempfile.gettempdir(), 'video-compressor-jobs')
+else:
+    DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+    JOBS_DIR  = os.path.join(DIRECTORY, '.jobs')
+
 os.makedirs(JOBS_DIR, exist_ok=True)
 
 jobs: dict = {}

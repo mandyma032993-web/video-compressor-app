@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:server": "/Users/tal/Library/Python/3.9/bin/pyinstaller --onefile --name server server.py",
+    "build:server": "/Users/tal/Library/Python/3.9/bin/pyinstaller --onefile --name server --add-data 'index.html:.' --add-data 'app.js:.' server.py",
     "build-mac": "npm run build:server && electron-builder --mac",
     "build-win": "npm run build:server && electron-builder --win"
   },
