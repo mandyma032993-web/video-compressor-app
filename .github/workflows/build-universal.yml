@@ -118,11 +118,12 @@ jobs:
         run: |
           mkdir -p dist/mac-universal
           node -e "
+          const path = require('path');
           const { makeUniversalApp } = require('@electron/universal');
           makeUniversalApp({
-            x64AppPath: 'dist/mac-x64/Video Compressor.app',
-            arm64AppPath: 'dist/mac-arm64/Video Compressor.app',
-            outAppPath: 'dist/mac-universal/Video Compressor.app',
+            x64AppPath: path.resolve('dist/mac-x64/Video Compressor.app'),
+            arm64AppPath: path.resolve('dist/mac-arm64/Video Compressor.app'),
+            outAppPath: path.resolve('dist/mac-universal/Video Compressor.app'),
             x64ArchFiles: '**/bin/ffprobe',
           }).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); });
           "
