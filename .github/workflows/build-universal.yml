@@ -90,9 +90,11 @@ jobs:
         run: |
           mkdir -p dist
           chmod +x artifacts/arm64/* artifacts/x64/*
-          lipo -create artifacts/arm64/server  artifacts/x64/server  -output dist/server
-          lipo -create artifacts/arm64/ffmpeg  artifacts/x64/ffmpeg  -output dist/ffmpeg
-          lipo -create artifacts/arm64/ffprobe artifacts/x64/ffprobe -output dist/ffprobe
+          file artifacts/arm64/* artifacts/x64/*
+          lipo -create artifacts/arm64/server artifacts/x64/server -output dist/server
+          lipo -create artifacts/arm64/ffmpeg artifacts/x64/ffmpeg -output dist/ffmpeg
+          # ffprobe-static has no real arm64 binary; x86_64 works via Rosetta on arm64
+          cp artifacts/x64/ffprobe dist/ffprobe
           chmod +x dist/server dist/ffmpeg dist/ffprobe
           file dist/server dist/ffmpeg dist/ffprobe
 
