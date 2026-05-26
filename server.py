@@ -11,7 +11,9 @@ import shutil
 import time
 from urllib.parse import urlparse, parse_qs, unquote
 
-PORT = int(os.environ.get('PORT', 8080))
+PORT    = int(os.environ.get('PORT', 8080))
+FFMPEG  = os.environ.get('FFMPEG_PATH',  'ffmpeg')
+FFPROBE = os.environ.get('FFPROBE_PATH', 'ffprobe')
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 JOBS_DIR = os.path.join(DIRECTORY, '.jobs')
 os.makedirs(JOBS_DIR, exist_ok=True)
@@ -28,7 +30,7 @@ LEVEL_PARAMS = {
 
 def check_ffmpeg():
     try:
-        subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+        subprocess.run([FFMPEG, '-version'], capture_output=True, check=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
@@ -37,7 +39,7 @@ def check_ffmpeg():
 def get_duration(input_path: str) -> float:
     try:
         r = subprocess.run(
-            ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+            [FFPROBE, '-v', 'error', '-show_entries', 'format=duration',
              '-of', 'default=noprint_wrappers=1:nokey=1', input_path],
             capture_output=True, text=True, timeout=30,
         )
@@ -86,7 +88,7 @@ def run_2pass(job_id, input_path, output_path, vbr, vf_args, audio_br, passlog, 
     with jobs_lock:
         jobs[job_id]['phase'] = 'analyzing'
     p1 = subprocess.Popen(
-        ['ffmpeg', '-y', '-i', input_path,
+        [FFMPEG, '-y', '-i', input_path,
          '-c:v', 'libx264', '-b:v', bitrate_arg,
          '-pass', '1', '-passlogfile', passlog,
          *vf_args, '-an', '-f', 'null', '/dev/null'],
@@ -98,7 +100,7 @@ def run_2pass(job_id, input_path, output_path, vbr, vf_args, audio_br, passlog, 
     with jobs_lock:
         jobs[job_id]['phase'] = 'compressing'
     p2 = subprocess.Popen(
-        ['ffmpeg', '-y', '-i', input_path,
+        [FFMPEG, '-y', '-i', input_path,
          '-c:v', 'libx264', '-b:v', bitrate_arg,
          '-pass', '2', '-passlogfile', passlog,
          *vf_args, '-c:a', 'aac', '-b:a', audio_br,
@@ -179,7 +181,7 @@ def run_job(job_id: str):
             # CRF single-pass
             with jobs_lock:
                 jobs[job_id]['phase'] = 'compressing'
-            cmd = ['ffmpeg', '-y', '-i', input_path,
+            cmd = [FFMPEG, '-y', '-i', input_path,
                    '-c:v', 'libx264', '-crf', params['crf'], '-preset', params['preset'],
                    *vf_args, '-c:a', 'aac', '-b:a', params['audio_br'],
                    output_path]

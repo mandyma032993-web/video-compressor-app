@@ -3,6 +3,8 @@ const { spawn } = require('child_process')
 const path = require('path')
 const net = require('net')
 const http = require('http')
+const ffmpegPath = require('ffmpeg-static')
+const ffprobePath = require('ffprobe-static').path
 
 let mainWindow = null
 let pythonProcess = null
@@ -40,8 +42,20 @@ async function startServer() {
     ? path.join(process.resourcesPath, 'server.py')
     : path.join(__dirname, 'server.py')
 
+  const binDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'bin')
+    : path.dirname(ffmpegPath)
+
+  const resolvedFfmpeg  = app.isPackaged ? path.join(binDir, 'ffmpeg')  : ffmpegPath
+  const resolvedFfprobe = app.isPackaged ? path.join(binDir, 'ffprobe') : ffprobePath
+
   pythonProcess = spawn('python3', [script], {
-    env: { ...process.env, PORT: String(port) },
+    env: {
+      ...process.env,
+      PORT: String(port),
+      FFMPEG_PATH:  resolvedFfmpeg,
+      FFPROBE_PATH: resolvedFfprobe,
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
