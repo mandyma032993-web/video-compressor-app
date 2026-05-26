@@ -86,50 +86,26 @@ jobs:
           name: binaries-x64
           path: artifacts/x64
 
+      - name: Prepare arch-bins and seed dist/server
+        run: |
+          mkdir -p arch-bins/arm64 arch-bins/x64 dist
+          chmod +x artifacts/arm64/server artifacts/arm64/ffmpeg
+          chmod +x artifacts/x64/server artifacts/x64/ffmpeg artifacts/x64/ffprobe
+          cp artifacts/arm64/server arch-bins/arm64/server
+          cp artifacts/arm64/ffmpeg arch-bins/arm64/ffmpeg
+          cp artifacts/x64/server  arch-bins/x64/server
+          cp artifacts/x64/ffmpeg  arch-bins/x64/ffmpeg
+          # seed dist/server so extraResources path exists before beforePack runs
+          cp artifacts/arm64/server dist/server
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - run: npm ci
 
-      - run: npm install --save-dev @electron/universal
-
-      - name: Build arm64 app (unpacked)
-        run: |
-          mkdir -p dist
-          chmod +x artifacts/arm64/server artifacts/arm64/ffmpeg artifacts/x64/ffprobe
-          cp artifacts/arm64/server dist/server
-          cp artifacts/arm64/ffmpeg node_modules/ffmpeg-static/ffmpeg
-          cp artifacts/x64/ffprobe node_modules/ffprobe-static/bin/darwin/arm64/ffprobe
-          npx electron-builder --mac --arm64 --dir
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Build x64 app (unpacked)
-        run: |
-          chmod +x artifacts/x64/server artifacts/x64/ffmpeg
-          cp artifacts/x64/server dist/server
-          cp artifacts/x64/ffmpeg node_modules/ffmpeg-static/ffmpeg
-          npx electron-builder --mac --x64 --dir
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Merge into universal app
-        run: |
-          mkdir -p dist/mac-universal
-          node -e "
-          const path = require('path');
-          const { makeUniversalApp } = require('@electron/universal');
-          makeUniversalApp({
-            x64AppPath: path.resolve('dist/mac-x64/Video Compressor.app'),
-            arm64AppPath: path.resolve('dist/mac-arm64/Video Compressor.app'),
-            outAppPath: path.resolve('dist/mac-universal/Video Compressor.app'),
-            x64ArchFiles: '**/bin/ffprobe',
-          }).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); });
-          "
-
-      - name: Package universal app into DMG
-        run: npx electron-builder --prepackaged "dist/mac-universal/Video Compressor.app" --mac dmg
+      - name: Build universal app
+        run: npx electron-builder --mac --universal
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
