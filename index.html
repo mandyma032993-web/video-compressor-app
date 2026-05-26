@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Compressor</title>
+  <style>
+    :root {
+      --bg: #0d0f18;
+      --surface: #151720;
+      --surface2: #1e2130;
+      --border: #262940;
+      --accent: #7c6ff7;
+      --accent-hover: #6a5ee8;
+      --accent-glow: rgba(124, 111, 247, 0.25);
+      --text: #e8e8f0;
+      --text-muted: #6b6f8a;
+      --text-dim: #9396ad;
+      --success: #43c88a;
+      --warning: #f59e0b;
+      --error: #f0524f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    header h1 span { color: var(--accent); }
+    header p {
+      color: var(--text-muted);
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 580px;
+      padding: 32px;
+      margin-bottom: 14px;
+    }
+
+    /* ── Upload Zone ── */
+    #upload-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 56px 32px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: center;
+      position: relative;
+    }
+    #upload-zone:hover,
+    #upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    #upload-zone .upload-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--surface2);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    #upload-zone .upload-icon svg { opacity: 0.7; }
+    #upload-zone h3 { font-size: 16px; font-weight: 600; }
+    #upload-zone p { font-size: 13px; color: var(--text-muted); }
+    #upload-zone input { display: none; }
+
+    /* ── Info Card ── */
+    #info-card { display: none; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .info-item {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .info-item .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+    .info-item .value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-header h3 { font-size: 15px; font-weight: 600; }
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .btn-link:hover { text-decoration: underline; }
+    .file-name {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Settings Panel ── */
+    #settings-panel { display: none; }
+    #settings-panel h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .input-row input[type="number"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 600;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-row input[type="number"]:focus { border-color: var(--accent); }
+    .input-row .unit {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .preset-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    #memory-warning {
+      display: none;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--warning);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    #bitrate-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      min-height: 18px;
+    }
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:active:not(:disabled) { transform: scale(0.99); }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Progress Panel ── */
+    #progress-panel { display: none; }
+    #progress-panel h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    #phase-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .progress-track {
+      background: var(--surface2);
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      border-radius: 8px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    #progress-fill.indeterminate {
+      width: 100% !important;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    #progress-pct { color: var(--accent); font-weight: 600; }
+    #cancel-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      width: 100%;
+    }
+    #cancel-btn:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    /* ── Result Panel ── */
+    #result-panel { display: none; }
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .result-header .check {
+      width: 36px;
+      height: 36px;
+      background: rgba(67, 200, 138, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .result-header h3 { font-size: 17px; font-weight: 700; }
+    .size-comparison {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .size-box {
+      flex: 1;
+      text-align: center;
+    }
+    .size-box .size-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .size-box .size-value {
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .size-box .size-value.original { color: var(--text-dim); }
+    .size-box .size-value.compressed { color: var(--success); }
+    .size-arrow { color: var(--text-muted); font-size: 20px; }
+    .saving-badge {
+      background: rgba(67, 200, 138, 0.12);
+      border: 1px solid rgba(67, 200, 138, 0.3);
+      border-radius: 8px;
+      color: var(--success);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #download-btn {
+      display: block;
+      width: 100%;
+      background: var(--success);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-bottom: 12px;
+    }
+    #download-btn:hover { opacity: 0.88; }
+    #download-btn:active { transform: scale(0.99); }
+    #reset-btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #reset-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Setting Groups ── */
+    .setting-group { margin-bottom: 18px; }
+    .setting-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .optional-label { font-size: 11px; color: var(--text-muted); margin-left: 4px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-group .option-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex: 1;
+      text-align: center;
+    }
+    .btn-group .option-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .btn-group .option-btn.active {
+      background: rgba(124, 111, 247, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Error Banner ── */
+    #error-banner {
+      display: none;
+      background: rgba(240, 82, 79, 0.08);
+      border: 1px solid rgba(240, 82, 79, 0.3);
+      border-radius: 14px;
+      padding: 20px 24px;
+      color: var(--error);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    #error-banner strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    #error-detail { color: var(--text-muted); font-size: 13px; word-break: break-word; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ── How to Use section ── */
+    #how-to-use {
+      width: 100%;
+      max-width: 580px;
+      margin-top: 40px;
+    }
+
+    .section-heading {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Steps */
+    .htu-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .htu-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .htu-num {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 1px;
+    }
+    .htu-body h4 {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .htu-body p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Level cards */
+    .htu-levels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .htu-level {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .htu-level .lv-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+    }
+    .lv-low  .lv-badge { background: rgba(67,200,138,.15); color: var(--success); }
+    .lv-med  .lv-badge { background: rgba(245,158,11,.15);  color: var(--warning); }
+    .lv-high .lv-badge { background: rgba(240,82,79,.15);   color: var(--error);   }
+    .htu-level .lv-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .htu-level .lv-use {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    /* Platform limits */
+    .htu-platforms {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .htu-platform {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+    }
+    .htu-platform .pl-name { font-size: 13px; color: var(--text-dim); }
+    .htu-platform .pl-limit {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+
+    /* Privacy note */
+    .htu-privacy {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+    }
+    .htu-privacy .priv-icon { font-size: 18px; flex-shrink: 0; }
+    .htu-privacy p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    /* FAQ */
+    .htu-faq { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .htu-faq-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .htu-faq-item:last-child { border-bottom: none; }
+    .htu-faq-q { font-size: 13.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .htu-faq-a { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    @media (max-width: 480px) {
+      .htu-levels { grid-template-columns: 1fr; }
+      .htu-platforms { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Video <span>Compressor</span></h1>
+    <p>Powered by local FFmpeg · No file size limit</p>
+  </header>
+
+  <!-- Panel 1: Upload -->
+  <div id="upload-zone" class="card" role="button" tabindex="0"
+       aria-label="Click or drag and drop a video file">
+    <div class="upload-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+           stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 16 12 12 8 16"></polyline>
+        <line x1="12" y1="12" x2="12" y2="21"></line>
+        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+      </svg>
+    </div>
+    <h3>Drag &amp; drop your video here</h3>
+    <p>or click to browse</p>
+    <p style="font-size:12px; color: var(--border); margin-top:4px;">MP4 files only</p>
+    <input type="file" id="file-input" accept=".mp4,video/mp4">
+  </div>
+
+  <!-- Panel 2: Info -->
+  <div id="info-card" class="card">
+    <div class="card-header">
+      <h3>Video Info</h3>
+      <button class="btn-link" id="change-file-btn">Change file</button>
+    </div>
+    <div class="file-name" id="file-name-display">—</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">Original size</div>
+        <div class="value" id="info-size">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Duration</div>
+        <div class="value" id="info-duration">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Resolution</div>
+        <div class="value" id="info-resolution">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Codec</div>
+        <div class="value" id="info-codec">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Settings -->
+  <div id="settings-panel" class="card">
+    <h3>Compression Settings</h3>
+
+    <div class="setting-group">
+      <div class="setting-label">Compression Level</div>
+      <div class="btn-group">
+        <button class="option-btn" data-level="low">Low</button>
+        <button class="option-btn" data-level="medium">Medium</button>
+        <button class="option-btn active" data-level="high">High</button>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <div class="setting-label">Target Size <span class="optional-label">(optional)</span></div>
+      <div class="input-row">
+        <input type="number" id="target-size" placeholder="Auto" min="1">
+        <span class="unit">MB</span>
+      </div>
+      <div class="presets">
+        <button class="preset-btn" data-mb="100">100 MB</button>
+        <button class="preset-btn" data-mb="200">200 MB</button>
+        <button class="preset-btn" data-mb="500">500 MB</button>
+        <button class="preset-btn" data-mb="1024">1 GB</button>
+      </div>
+    </div>
+
+    <div id="bitrate-hint"></div>
+    <div id="memory-warning"></div>
+    <button class="btn-primary" id="compress-btn">Compress</button>
+  </div>
+
+  <!-- Panel 4: Progress -->
+  <div id="progress-panel" class="card">
+    <h3 id="progress-title">Compressing</h3>
+    <div id="phase-label">Preparing...</div>
+    <div class="progress-track">
+      <div id="progress-fill" class="indeterminate"></div>
+    </div>
+    <div class="progress-row">
+      <span id="progress-detail">Do not close this page</span>
+      <span id="progress-pct">—</span>
+    </div>
+    <button id="cancel-btn">Cancel</button>
+  </div>
+
+  <!-- Panel 5: Result -->
+  <div id="result-panel" class="card">
+    <div class="result-header">
+      <div class="check">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="var(--success)" stroke-width="2.5" stroke-linecap="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h3>Compression complete!</h3>
+    </div>
+    <div class="size-comparison">
+      <div class="size-box">
+        <div class="size-label">Original</div>
+        <div class="size-value original" id="result-original">—</div>
+      </div>
+      <div class="size-arrow">→</div>
+      <div class="size-box">
+        <div class="size-label">Compressed</div>
+        <div class="size-value compressed" id="result-compressed">—</div>
+      </div>
+    </div>
+    <div class="saving-badge" id="saving-badge">—</div>
+    <a id="download-btn" href="#" download>Download compressed video</a>
+    <button id="reset-btn">Compress another file</button>
+  </div>
+
+  <!-- Error Banner -->
+  <div id="error-banner" class="card">
+    <strong id="error-title">Compression failed</strong>
+    <div id="error-detail">Unknown error</div>
+    <button id="error-back-btn" style="margin-top:16px;width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--text-muted);font-size:14px;padding:10px 24px;cursor:pointer;">Try again</button>
+  </div>
+
+  <!-- ── How to Use ── -->
+  <section id="how-to-use">
+
+    <div class="section-heading">How to Use</div>
+
+    <!-- Steps -->
+    <div class="htu-steps">
+      <div class="htu-step">
+        <div class="htu-num">1</div>
+        <div class="htu-body">
+          <h4>Upload your video</h4>
+          <p>Drag and drop an MP4 file onto the area above, or click to browse. Only <code>.mp4</code> files are supported.</p>
+        </div>
+      </div>
+      <div class="htu-step">
+        <div class="htu-num">2</div>
+        <div class="htu-body">
+          <h4>Choose a compression level</h4>
+          <p>Pick Low, Medium, or High depending on how much you want to reduce the file. Or enter a specific target size in MB.</p>
+        </div>
+      </div>
+      <div class="htu-step">
+        <div class="htu-num">3</div>
+        <div class="htu-body">
+          <h4>Start compression</h4>
+          <p>Click <strong>Compress</strong> and keep the tab open. A progress bar tracks each phase: uploading, analyzing, and compressing.</p>
+        </div>
+      </div>
+      <div class="htu-step">
+        <div class="htu-num">4</div>
+        <div class="htu-body">
+          <h4>Download the result</h4>
+          <p>Once done, click <strong>Download compressed video</strong>. The file is available for 30 minutes before automatic deletion.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compression Levels -->
+    <div class="section-heading" style="margin-bottom:12px;">Compression Levels</div>
+    <div class="htu-levels" style="margin-bottom:24px;">
+      <div class="htu-level lv-low">
+        <div class="lv-badge">Low</div>
+        <div class="lv-desc">High quality, larger file<br>CRF 18 · 192 kbps audio</div>
+        <div class="lv-use">Archiving, masters</div>
+      </div>
+      <div class="htu-level lv-med">
+        <div class="lv-badge">Medium</div>
+        <div class="lv-desc">Balanced quality &amp; size<br>CRF 23 · 128 kbps audio</div>
+        <div class="lv-use">General sharing</div>
+      </div>
+      <div class="htu-level lv-high">
+        <div class="lv-badge">High</div>
+        <div class="lv-desc">Smallest file, lower quality<br>CRF 28 · 64 kbps audio</div>
+        <div class="lv-use">Email, messaging</div>
+      </div>
+    </div>
+
+    <!-- Platform limits -->
+    <div class="section-heading" style="margin-bottom:12px;">Common Platform Limits</div>
+    <div class="htu-platforms">
+      <div class="htu-platform"><span class="pl-name">Lesson Preparation Video</span><span class="pl-limit">500 MB</span></div>
+    </div>
+
+    <!-- Privacy -->
+    <div class="htu-privacy">
+      <div class="priv-icon">🔒</div>
+      <p>Your files are processed on the server and <strong>deleted automatically within 30 minutes</strong>. The compressed output is removed 60 seconds after you download it. Nothing is stored permanently.</p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section-heading" style="margin-bottom:12px;">FAQ</div>
+    <div class="htu-faq">
+      <div class="htu-faq-item">
+        <div class="htu-faq-q">What formats are supported?</div>
+        <p class="htu-faq-a">Input must be MP4. Output is always MP4 (H.264 video + AAC audio).</p>
+      </div>
+      <div class="htu-faq-item">
+        <div class="htu-faq-q">Is there a file size limit?</div>
+        <p class="htu-faq-a">No hard limit. Files up to several GB work fine — practical limits depend on your upload speed.</p>
+      </div>
+      <div class="htu-faq-item">
+        <div class="htu-faq-q">Can I close the tab while compressing?</div>
+        <p class="htu-faq-a">No — the download link will be lost. Keep the tab open until the download button appears.</p>
+      </div>
+      <div class="htu-faq-item">
+        <div class="htu-faq-q">The compressed file is larger than the original — why?</div>
+        <p class="htu-faq-a">The original may already be heavily compressed. Try the High level or set an explicit target size.</p>
+      </div>
+    </div>
+
+  </section>
+
+  <footer style="margin-top:48px;">Powered by local FFmpeg</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

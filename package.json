@@ -1,0 +1,29 @@
+{
+  "name": "video-compressor",
+  "version": "1.0.0",
+  "description": "Video Compressor desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.videocompressor.app",
+    "productName": "Video Compressor",
+    "extraResources": [
+      { "from": "server.py", "to": "server.py" }
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "icon": "assets/icon.icns"
+    },
+    "win": {
+      "icon": "assets/icon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
