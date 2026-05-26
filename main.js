@@ -38,18 +38,21 @@ function waitForServer(port, attemptsLeft = 40) {
 
 async function startServer() {
   const port = await findFreePort()
-  const script = app.isPackaged
-    ? path.join(process.resourcesPath, 'server.py')
-    : path.join(__dirname, 'server.py')
 
-  const binDir = app.isPackaged
-    ? path.join(process.resourcesPath, 'bin')
-    : path.dirname(ffmpegPath)
+  // Packaged: compiled server binary in resources/
+  // Development: dist/server built by PyInstaller
+  const serverBin = app.isPackaged
+    ? path.join(process.resourcesPath, 'server')
+    : path.join(__dirname, 'dist', 'server')
 
-  const resolvedFfmpeg  = app.isPackaged ? path.join(binDir, 'ffmpeg')  : ffmpegPath
-  const resolvedFfprobe = app.isPackaged ? path.join(binDir, 'ffprobe') : ffprobePath
+  const resolvedFfmpeg  = app.isPackaged
+    ? path.join(process.resourcesPath, 'bin', 'ffmpeg')
+    : ffmpegPath
+  const resolvedFfprobe = app.isPackaged
+    ? path.join(process.resourcesPath, 'bin', 'ffprobe')
+    : ffprobePath
 
-  pythonProcess = spawn('python3', [script], {
+  pythonProcess = spawn(serverBin, [], {
     env: {
       ...process.env,
       PORT: String(port),
@@ -59,9 +62,9 @@ async function startServer() {
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
-  pythonProcess.stdout.on('data', d => console.log('[py]', d.toString().trim()))
-  pythonProcess.stderr.on('data', d => console.error('[py]', d.toString().trim()))
-  pythonProcess.on('error', err => console.error('Python spawn error:', err.message))
+  pythonProcess.stdout.on('data', d => console.log('[server]', d.toString().trim()))
+  pythonProcess.stderr.on('data', d => console.error('[server]', d.toString().trim()))
+  pythonProcess.on('error', err => console.error('Server spawn error:', err.message))
 
   await waitForServer(port)
   return port

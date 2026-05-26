@@ -5,14 +5,15 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build-mac": "electron-builder --mac",
-    "build-win": "electron-builder --win"
+    "build:server": "/Users/tal/Library/Python/3.9/bin/pyinstaller --onefile --name server server.py",
+    "build-mac": "npm run build:server && electron-builder --mac",
+    "build-win": "npm run build:server && electron-builder --win"
   },
   "build": {
     "appId": "com.videocompressor.app",
     "productName": "Video Compressor",
     "extraResources": [
-      { "from": "server.py", "to": "server.py" },
+      { "from": "dist/server", "to": "server" },
       { "from": "node_modules/ffmpeg-static/ffmpeg", "to": "bin/ffmpeg" },
       { "from": "node_modules/ffprobe-static/bin/darwin/arm64/ffprobe", "to": "bin/ffprobe" }
     ],
