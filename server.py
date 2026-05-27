@@ -11,6 +11,7 @@ import uuid
 import shutil
 import tempfile
 import time
+import urllib.request
 from urllib.parse import urlparse, parse_qs, unquote
 
 PORT    = int(os.environ.get('PORT', 8080))
@@ -245,6 +246,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/health':
             self.send_json({'ok': True})
+
+        elif path == '/stats':
+            try:
+                url = 'https://api.counterapi.dev/v1/video-compressor-app/launches'
+                req = urllib.request.Request(url, headers={'User-Agent': 'VideoCompressor/1.0'})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read())
+                self.send_json({'count': data.get('count', 0)})
+            except Exception:
+                self.send_json({'count': 0})
 
         elif path.startswith('/progress/'):
             job_id = path[len('/progress/'):]

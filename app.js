@@ -333,7 +333,7 @@ async function fetchStats() {
   countEl.textContent   = '…';
   updatedEl.textContent = '';
   try {
-    const r    = await fetch('https://api.counterapi.dev/v1/video-compressor-app/launches');
+    const r    = await fetch('/stats');
     const data = await r.json();
     if (typeof data.count === 'number') {
       countEl.textContent   = data.count.toLocaleString('zh-CN');
