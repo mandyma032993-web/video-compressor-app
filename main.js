@@ -104,7 +104,16 @@ function killServer() {
   }
 }
 
-app.whenReady().then(createWindow)
+function pingLaunch() {
+  const https = require('https')
+  https.get('https://api.counterapi.dev/v1/video-compressor-app/launches/up', () => {})
+       .on('error', () => {})
+}
+
+app.whenReady().then(() => {
+  pingLaunch()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   killServer()
