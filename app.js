@@ -328,23 +328,22 @@ const viewCompressor = document.getElementById('view-compressor');
 const viewStats      = document.getElementById('view-stats');
 
 async function fetchStats() {
-  const countEl   = document.getElementById('stats-count');
-  const updatedEl = document.getElementById('stats-updated');
-  countEl.textContent   = '…';
-  updatedEl.textContent = '';
+  const launchesEl     = document.getElementById('stats-launches');
+  const compressionsEl = document.getElementById('stats-compressions');
+  const updatedEl      = document.getElementById('stats-updated');
+  launchesEl.textContent     = '…';
+  compressionsEl.textContent = '…';
+  updatedEl.textContent      = '';
   try {
     const r    = await fetch('/stats');
     const data = await r.json();
-    if (typeof data.count === 'number') {
-      countEl.textContent   = data.count.toLocaleString('zh-CN');
-      updatedEl.textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')}`;
-    } else {
-      countEl.textContent   = '0';
-      updatedEl.textContent = '暂无记录';
-    }
+    launchesEl.textContent     = (data.launches     ?? 0).toLocaleString('zh-CN');
+    compressionsEl.textContent = (data.compressions ?? 0).toLocaleString('zh-CN');
+    updatedEl.textContent      = `更新于 ${new Date().toLocaleTimeString('zh-CN')}`;
   } catch (_) {
-    countEl.textContent   = '—';
-    updatedEl.textContent = '获取失败，请检查网络';
+    launchesEl.textContent     = '—';
+    compressionsEl.textContent = '—';
+    updatedEl.textContent      = '获取失败，请检查网络';
   }
 }
 

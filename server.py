@@ -207,6 +207,15 @@ def run_job(job_id: str):
             jobs[job_id]['status']      = 'done'
             jobs[job_id]['output_size'] = os.path.getsize(output_path)
 
+        def _ping_compression():
+            try:
+                url = 'https://api.counterapi.dev/v1/video-compressor-app/compressions/up'
+                req = urllib.request.Request(url, headers={'User-Agent': 'VideoCompressor/1.0'})
+                urllib.request.urlopen(req, timeout=5).close()
+            except Exception:
+                pass
+        threading.Thread(target=_ping_compression, daemon=True).start()
+
     except Exception as e:
         with jobs_lock:
             jobs[job_id]['status'] = 'error'
@@ -248,14 +257,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': True})
 
         elif path == '/stats':
-            try:
-                url = 'https://api.counterapi.dev/v1/video-compressor-app/launches'
-                req = urllib.request.Request(url, headers={'User-Agent': 'VideoCompressor/1.0'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = json.loads(resp.read())
-                self.send_json({'count': data.get('count', 0)})
-            except Exception:
-                self.send_json({'count': 0})
+            def fetch_count(key):
+                try:
+                    url = f'https://api.counterapi.dev/v1/video-compressor-app/{key}'
+                    req = urllib.request.Request(url, headers={'User-Agent': 'VideoCompressor/1.0'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        return json.loads(resp.read()).get('count', 0)
+                except Exception:
+                    return 0
+            launches     = fetch_count('launches')
+            compressions = fetch_count('compressions')
+            self.send_json({'launches': launches, 'compressions': compressions})
 
         elif path.startswith('/progress/'):
             job_id = path[len('/progress/'):]

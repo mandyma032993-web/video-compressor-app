@@ -635,29 +635,45 @@
     }
     .stats-hero {
       text-align: center;
-      padding: 48px 32px 36px;
+      padding: 40px 32px 28px;
+    }
+    .stats-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+    .stats-item {
+      flex: 1;
+      text-align: center;
+    }
+    .stats-divider {
+      width: 1px;
+      height: 64px;
+      background: var(--border);
+      flex-shrink: 0;
     }
     .stats-count {
-      font-size: 80px;
+      font-size: 64px;
       font-weight: 700;
       color: var(--accent);
       line-height: 1;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       letter-spacing: -2px;
     }
     .stats-label {
-      font-size: 16px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
     }
     .stats-sub {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
     }
     .stats-actions {
       display: flex;
       justify-content: center;
-      margin-top: 24px;
+      margin-top: 16px;
     }
     .stats-note {
       font-size: 13px;
@@ -907,15 +923,24 @@
   <div id="view-stats">
     <div class="card" style="width:100%; max-width:580px; padding:0; overflow:hidden;">
       <div class="stats-hero">
-        <div class="stats-count" id="stats-count">—</div>
-        <div class="stats-label">累计启动次数</div>
+        <div class="stats-row">
+          <div class="stats-item">
+            <div class="stats-count" id="stats-launches">—</div>
+            <div class="stats-label">累计启动次数</div>
+          </div>
+          <div class="stats-divider"></div>
+          <div class="stats-item">
+            <div class="stats-count" id="stats-compressions">—</div>
+            <div class="stats-label">压缩成功次数</div>
+          </div>
+        </div>
         <div class="stats-sub" id="stats-updated">正在加载…</div>
         <div class="stats-actions">
           <button class="btn-link" id="stats-refresh-btn">↻ 刷新</button>
         </div>
       </div>
       <div class="stats-note">
-        每次用户打开应用时自动计数，不收集任何个人信息。
+        每次用户打开应用或压缩成功时自动计数，不收集任何个人信息。
       </div>
     </div>
   </div>
