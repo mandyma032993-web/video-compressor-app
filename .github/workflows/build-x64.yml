@@ -39,7 +39,7 @@ jobs:
           npm_config_platform: darwin
 
       - name: Build x64 app
-        run: npx electron-builder --mac --x64
+        run: npx electron-builder --mac --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
