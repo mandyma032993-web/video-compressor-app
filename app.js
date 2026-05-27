@@ -322,3 +322,40 @@ resetBtn.addEventListener('click', () => {
   progressFill.style.width = '0%';
   resetSettings();
 });
+
+// ── Stats tab ──────────────────────────────────────────────────────────────
+const viewCompressor = document.getElementById('view-compressor');
+const viewStats      = document.getElementById('view-stats');
+
+async function fetchStats() {
+  const countEl   = document.getElementById('stats-count');
+  const updatedEl = document.getElementById('stats-updated');
+  countEl.textContent   = '…';
+  updatedEl.textContent = '';
+  try {
+    const r    = await fetch('https://api.counterapi.dev/v1/video-compressor-app/launches');
+    const data = await r.json();
+    if (typeof data.count === 'number') {
+      countEl.textContent   = data.count.toLocaleString('zh-CN');
+      updatedEl.textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')}`;
+    } else {
+      countEl.textContent   = '0';
+      updatedEl.textContent = '暂无记录';
+    }
+  } catch (_) {
+    countEl.textContent   = '—';
+    updatedEl.textContent = '获取失败，请检查网络';
+  }
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    const view = btn.dataset.view;
+    viewCompressor.style.display = view === 'compressor' ? 'contents' : 'none';
+    viewStats.style.display      = view === 'stats'      ? 'flex'     : 'none';
+    if (view === 'stats') fetchStats();
+  });
+});
+
+document.getElementById('stats-refresh-btn').addEventListener('click', fetchStats);
