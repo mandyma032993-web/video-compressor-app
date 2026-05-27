@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 // Runs after each architecture's app is fully packed.
 // Injects arch-specific binaries directly into the built app bundle,
@@ -18,9 +19,12 @@ exports.default = async function(context) {
     const dst = path.join(resourcesDir, dstRelative);
     if (!fs.existsSync(src)) { console.warn(`afterPack: missing ${src}`); return; }
     if (!fs.existsSync(path.dirname(dst))) { console.warn(`afterPack: dst dir missing ${path.dirname(dst)}`); return; }
+    const srcArch = execSync(`file "${src}"`).toString().trim();
     fs.copyFileSync(src, dst);
     fs.chmodSync(dst, '755');
-    console.log(`afterPack [${archName}]: ${srcFile} → ${dst}`);
+    const dstArch = execSync(`file "${dst}"`).toString().trim();
+    console.log(`afterPack [${archName}]: src=${srcArch}`);
+    console.log(`afterPack [${archName}]: dst=${dstArch}`);
   };
 
   inject('server', 'server');
