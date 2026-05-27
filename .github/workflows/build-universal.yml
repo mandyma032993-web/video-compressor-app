@@ -55,8 +55,15 @@ jobs:
           node-version: "20"
 
       - run: npm ci
+
+      - name: Force x64 ffmpeg download
+        run: |
+          rm -f node_modules/ffmpeg-static/ffmpeg
+          node node_modules/ffmpeg-static/install.js
+          file node_modules/ffmpeg-static/ffmpeg
         env:
           npm_config_arch: x64
+          npm_config_platform: darwin
 
       - name: Collect x64 binaries
         run: |
@@ -64,6 +71,7 @@ jobs:
           cp dist/server artifacts/x64/server
           cp node_modules/ffmpeg-static/ffmpeg artifacts/x64/ffmpeg
           cp node_modules/ffprobe-static/bin/darwin/x64/ffprobe artifacts/x64/ffprobe
+          file artifacts/x64/server artifacts/x64/ffmpeg
 
       - uses: actions/upload-artifact@v4
         with:
@@ -95,8 +103,10 @@ jobs:
           cp artifacts/arm64/ffmpeg arch-bins/arm64/ffmpeg
           cp artifacts/x64/server  arch-bins/x64/server
           cp artifacts/x64/ffmpeg  arch-bins/x64/ffmpeg
-          # seed dist/server so extraResources path exists before beforePack runs
           cp artifacts/arm64/server dist/server
+          echo "=== Binary architectures ==="
+          file arch-bins/arm64/server arch-bins/arm64/ffmpeg
+          file arch-bins/x64/server   arch-bins/x64/ffmpeg
 
       - uses: actions/setup-node@v4
         with:
